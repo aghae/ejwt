@@ -40,14 +40,14 @@ const ejwt = {
 
               if(ejwt.conf.use_redis){
                   if(action=='unset')
-                      redis.del(tid)
+                      __redis.del(tid)
 
                   else{
 
                     if(expire) 
-                        await redis.set(tid,JSON.stringify(payload),'EX',expire)
+                        await __redis.set(tid,JSON.stringify(payload),'EX',expire)
                     else
-                        await redis.set(tid,JSON.stringify(payload))
+                        await __redis.set(tid,JSON.stringify(payload))
 
                     token =  jwtsimple.encode({tokenId:tid}, ejwt.conf.secret);
                   }
@@ -99,7 +99,7 @@ const ejwt = {
         var ret=null
         if(ejwt.conf.use_redis){
           if(decoded.tokenId) 
-            ret = await redis.get(decoded.tokenId) 
+            ret = await __redis.get(decoded.tokenId) 
             ret=JSON.parse(ret)
           
         }
@@ -183,15 +183,15 @@ const ejwt = {
         var reqToken_csrf = reqToken.csrf_token
 
         if(!ejwt_csrf_token || ejwt_csrf_token!=reqToken_csrf)
-            return {err:'invalid csrf token'}
+            return {err:'invalid csrf token :('}
         else
-            return {succ:'is valid ;)'}
+            return {succ:'csurf token is valid :)'}
     }catch(err){
         return {err:err.message}
     } 
   },
 
-   capcha_gen: async (expire=0,captcha_name='captcha')=> {
+   captcha_gen: async (expire=0,captcha_name='captcha')=> {
     try{
        var svgCaptcha = require('svg-captcha');
        var captcha = svgCaptcha.create();
@@ -202,14 +202,14 @@ const ejwt = {
      }
    },
 
-   capcha_chk: async (captcha_name='captcha')=> {
+   captcha_chk: async (captcha_name='captcha')=> {
       try{
         input=_req.body[captcha_name]
         var ejwt_captcha = await  ejwt.getkey(captcha_name)
         if(ejwt_captcha && input==ejwt_captcha)
-            return {succ:'valid captch;)'}
+            return {succ:'valid captch :)'}
         else
-            return {err:'invalid captcha'}
+            return {err:'invalid captcha :('}
      }catch(err){
         return {err:err.message}
      }
@@ -221,13 +221,6 @@ const ejwt = {
 const jwtsimple  = require('jwt-simple');
 const uniqid     = require('uniqid');
 
-if(ejwt.conf.use_redis){
-const REDIS   = require("async-redis");
-const redis   = REDIS.createClient(ejwt.conf.redis_port,ejwt.conf.redis_host)
-}
-
-
-// module.exports = ejwt 
 
 module.exports = function(options){
 
@@ -238,6 +231,12 @@ module.exports = function(options){
         redis_host   : def(options.redis_host   , 'localhost'   ),
         redis_port   : def(options.redis_port   , 6379          ),
         secret       : def(options.secure        , `$eCr3T`      )
+  }
+
+   if(ejwt.conf.use_redis){
+        var REDIS   = require("async-redis");
+        __redis   = REDIS.createClient(ejwt.conf.redis_port,ejwt.conf.redis_host)
+      
   }
   return ejwt
 }

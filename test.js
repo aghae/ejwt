@@ -13,8 +13,8 @@ env={
 const express = require('express')
 const app = express()
 
-// const ejwt  = require('./index')(env); //jwt module that can work with redis
-const ejwt  = require('ejwt')(env); //jwt module that can work with redis
+const ejwt  = require('./index')(env); //jwt module that can work with redis
+// const ejwt  = require('ejwt')(env); //jwt module that can work with redis
 const bodyparser = require('body-parser');
 const cookieparser= require('cookie-parser')
 
@@ -47,7 +47,9 @@ app.get('/', (req, res) => {
 })
 
 app.get('/login', async(req, res)=> {
+
     await ejwt.set({ user:'aghae',rol:'admin' })
+
     res.json({ succ:'logined',
                token:ejwt.token,
                csrf_token: ejwt.data.csrf_token
@@ -89,14 +91,14 @@ app.get('/csrfchk', async (req, res)=> {
 
 });
 
-app.get('/capcha', async function(req, res) {
-   res.type('svg').send(await ejwt.capcha_gen())
+app.get('/captcha', async function(req, res) {
+   res.type('svg').send(await ejwt.captcha_gen())
 });
 
-app.get('/capcha-form', async function(req, res) {
+app.get('/captcha-form', async function(req, res) {
    res.send(`
-          <form method='POST' action='/capcha_chk' >
-            <img src="/capcha" ><br>
+          <form method='POST' action='/captcha_chk' >
+            <img src="/captcha" ><br>
             <input name='captcha' placeholder='Enter above text :'>
           </form>
         `,
@@ -105,8 +107,8 @@ app.get('/capcha-form', async function(req, res) {
     )
 });
 
-app.post('/capcha_chk', async function(req, res) {
-   res.send(await ejwt.capcha_chk())
+app.post('/captcha_chk', async function(req, res) {
+   res.send(await ejwt.captcha_chk())
     
 });
 

@@ -105,22 +105,22 @@ __node version  >= 10__
         */
     });
 
-    app.get('/capcha', async function(req, res) {
-       res.type('svg').send(await ejwt.capcha_gen())
+    app.get('/captcha', async function(req, res) {
+       res.type('svg').send(await ejwt.captcha_gen())
     });
     
-    app.get('/capcha-form', async function(req, res) {
+    app.get('/captcha-form', async function(req, res) {
        res.send(`
-              <form method='POST' action='/capcha_chk' >
-                <img src="/capcha" ><br>
+              <form method='POST' action='/captcha_chk' >
+                <img src="/captcha" ><br>
                 <input name='captcha' placeholder='Enter above text :'>
               </form>
         `,
         200,{'Content-Type':'text/html'})
     });
     
-    app.post('/capcha_chk', async function(req, res) {
-       res.send(await ejwt.capcha_chk())
+    app.post('/captcha_chk', async function(req, res) {
+       res.send(await ejwt.captcha_chk())
     });
 
 
@@ -138,9 +138,9 @@ All methods are async/await
     >Use it on form render route . check it out on above Test 
 + csrfchk () 
     >On `mobile app` you must post __csrf_token__ to route that use this method 
-+ capcha_gen (expire=0,captcha_name='captcha')
-    > On mobile you must post __captcha_name__ on post form to route that will call capcha_chk
-+ capcha_chk (captcha_name='captcha')
++ captcha_gen (expire=0,captcha_name='captcha')
+    > On mobile you must post __captcha_name__ on post form to route that will call captcha_chk
++ captcha_chk (captcha_name='captcha')
 + data `get decoded data`
 + token `get generared token`
 
