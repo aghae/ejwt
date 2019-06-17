@@ -1,0 +1,27 @@
+{
+  "name": "ejwt",
+  "version": "1.0.0",
+  "description": "Enhanced JSON Web Tocken",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "jwt",
+    "captcha",
+    "json",
+    "token",
+    "security"
+  ],
+  "author": "aghae",
+  "license": "ISC",
+  "dependencies": {
+    "jwt-simple": "^0.5.6",
+    "uniqid": "^5.0.3"
+  },
+  "devDependencies": {
+    "cookie-parser": "^1.4.4",
+    "express": "^4.17.1",
+    "svg-captcha": "^1.4.0"
+  }
+}
