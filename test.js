@@ -1,6 +1,6 @@
   
 env={
-    use_redis : true,       //use redis or not
+    use_redis : false,       //use redis or not
     expire: 60,           //in seconds
     sec_cookie: false,      //if true only pass on https . on develop set it to false
     redis_host:'localhost',
@@ -13,7 +13,7 @@ env={
 const express = require('express')
 const app = express()
 
-const ejwt  = require('ejwt')(env); //jwt module that can work with redis
+const ejwt  = require('express-ejwt')(env); //jwt module that can work with redis
 const bodyparser = require('body-parser');
 const cookieparser= require('cookie-parser')
 
