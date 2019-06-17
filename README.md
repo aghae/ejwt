@@ -25,7 +25,7 @@ __node version  >= 10__
         redis_port:6379,
         secret :`$eCr3T`,
     }
-    const ejwt  = require('aghae/ejwt')(options); 
+    const ejwt  = require('ejwt')(options); 
     //important : with app instance 
     app.use(function(req,res,next){_req=req,next()})
 ```
