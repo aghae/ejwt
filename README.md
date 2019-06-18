@@ -130,28 +130,52 @@ __node version  >= 10__
 ### Api
 
 + `await set (payload,expire=3600)`
+
   > set payload json data & return encoded token
+  
 + `await get ()`  
-   >   get payload  json data
+
+   >   get payload  json data  
+   
 + `await unset()`  
+
   >unset payload json data 
+  
 + `await getkey (key)`
+
   >get specified payload key
+  
 + `await setkey (key,val,expire = null) `
+
   > set payload key
+  
 + `await unsetkey (key)`
+
   >unset specified payload key
+  
 + `csrfgen ()`
+
     >Use it on form render route . check it out on above Test 
+    
 + `csrfchk () `
-    >On mobile app you must post __csrf_token__ to the route that use this method 
+
+    >On mobile app you must post __csrf_token__ to the route that use this 
+    method 
+    
 + `await captcha_gen (expire=0,captcha_name='captcha')`
+
     > On mobile app you must send __captcha_name__  input  as a posted data( by default captcha )  to the route that will call captcha_chk
+    
 + `captcha_chk (captcha_name='captcha')`
+
   > check input posted captcha_name ( by default is captcha )
+  
 + `data` 
+
   >  decoded data propery
+  
 + `token`
+
   > generared token property
 
 ---
