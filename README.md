@@ -1,4 +1,4 @@
-## __EJWT : Express Enhanced JSON Web Token__
+## __Express Enhanced JWT__
 __node version  >= 10__
 
 ### Features
