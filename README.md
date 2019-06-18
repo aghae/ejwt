@@ -10,7 +10,7 @@ __node version  >= 10__
 ### Install
 
 ```
-    npm install aghae/express-ejwt 
+    npm install aghae/express-jwt-enhanced
 ```
 
 ### Usage
@@ -26,7 +26,7 @@ __node version  >= 10__
         redis_port:6379,
         secret :`$eCr3T`,
     }
-    const ejwt  = require('express-ejwt')(options); 
+    const ejwt  = require('express-jwt-enhanced')(options); 
     //important : with app instance 
     app.use(function(req,res,next){_req=req,_res=res,next()})
     
@@ -38,7 +38,7 @@ __node version  >= 10__
     const app = express()
     port = process.env.port || 3000
     
-    const ejwt  = require('express-ejwt')({
+    const ejwt  = require('express-jwt-enhanced')({
         use_redis : false,      
         expire: 300,         
         sec_cookie: false,      
