@@ -15,7 +15,7 @@ const app = express()
 const bodyparser = require('body-parser');
 const cookieparser= require('cookie-parser')
 
-const ejwt  = require('express-ejwt')(env); 
+const ejwt  = require('express-jwt-enhanced')(env); 
 
 
 app 

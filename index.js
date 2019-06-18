@@ -203,7 +203,7 @@ const ejwt = {
    },
 
    captcha_chk: async (captcha_name='captcha')=> {
-      try{
+      try
         input=_req.body[captcha_name]
         var ejwt_captcha = await  ejwt.getkey(captcha_name)
         if(ejwt_captcha && input==ejwt_captcha)
