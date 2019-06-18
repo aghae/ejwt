@@ -2,7 +2,7 @@
 __node version  >= 10__
 
 ### Features
-- It can be used as a authenticator or session data
+- It can be used as a authenticator & session data
 - It can be used as stateless or statefull(with redis for horizontal scaling) 
 - Csruf protection
 - Captcha spam protection
@@ -27,10 +27,11 @@ __node version  >= 10__
     }
     const ejwt  = require('express-ejwt')(options); 
     //important : with app instance 
-    app.use(function(req,res,next){_req=req,next()})
+    app.use(function(req,res,next){_req=req,_res=res,next()})
+    
 ```
 
-### Test
+### Example
 ```javascript
     const express = require('express')
     const app = express()
@@ -55,8 +56,8 @@ __node version  >= 10__
     
     app.listen(port, () => console.log(`listening on port ${port}!`))
     
-    /*******Middlewares  ***************/
     
+  //authentication middleware
     async function auth(req,res,next){
        await ejwt.get() ?next():res.send({err:'auth failed'})
     }
@@ -127,22 +128,31 @@ __node version  >= 10__
 ```
 
 ### Api
-All methods are async/await 
-+ set (payload,expire=3600)
-+ get ()   `get payload`     
-+ unset()  `unset payload data `
-+ getkey (key) `get specified payload key`
-+ setkey (key,val,expire = null) 
-+ unsetkey (key)
-+ csrfgen ()
+
++ `await set (payload,expire=3600)`
+  > set payload json data & return encoded token
++ `await get ()`  
+   >   get payload  json data
++ `await unset()`  
+  >unset payload json data 
++ `await getkey (key)`
+  >get specified payload key
++ `await setkey (key,val,expire = null) `
+  > set payload key
++ `await unsetkey (key)`
+  >unset specified payload key
++ `csrfgen ()`
     >Use it on form render route . check it out on above Test 
-+ csrfchk () 
-    >On `mobile app` you must post __csrf_token__ to route that use this method 
-+ captcha_gen (expire=0,captcha_name='captcha')
-    > On mobile you must post __captcha_name__ on post form to route that will call captcha_chk
-+ captcha_chk (captcha_name='captcha')
-+ data `get decoded data`
-+ token `get generared token`
++ `csrfchk () `
+    >On mobile app you must post __csrf_token__ to the route that use this method 
++ `await captcha_gen (expire=0,captcha_name='captcha')`
+    > On mobile app you must send __captcha_name__  input  as a posted data( by default captcha )  to the route that will call captcha_chk
++ `captcha_chk (captcha_name='captcha')`
+  > check input posted captcha_name ( by default is captcha )
++ `data` 
+  >  decoded data propery
++ `token`
+  > generared token property
 
 ---
 

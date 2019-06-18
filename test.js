@@ -12,10 +12,11 @@ env={
 
 const express = require('express')
 const app = express()
-
-const ejwt  = require('express-ejwt')(env); //jwt module that can work with redis
 const bodyparser = require('body-parser');
 const cookieparser= require('cookie-parser')
+
+const ejwt  = require('express-ejwt')(env); 
+
 
 app 
   .use(cookieparser())

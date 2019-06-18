@@ -17,14 +17,18 @@
   ],
   "author": "aghae",
   "license": "ISC",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/aghae/express-ejwt.git"
+  },
   "dependencies": {
     "async-redis": "^1.1.7",
     "jwt-simple": "^0.5.6",
-    "uniqid": "^5.0.3"
+    "uniqid": "^5.0.3",
+    "svg-captcha": "^1.4.0"
   },
   "devDependencies": {
     "cookie-parser": "^1.4.4",
     "express": "^4.17.1",
-    "svg-captcha": "^1.4.0"
   }
 }
