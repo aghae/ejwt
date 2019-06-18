@@ -8,6 +8,7 @@ __node version  >= 10__
 - Captcha spam protection
 
 ### Install
+
 ```
     npm install aghae/express-ejwt 
 ```
@@ -153,11 +154,11 @@ __node version  >= 10__
 
   >unset specified payload key
   
-+ `csrfgen ()`
++ `await csrfgen ()`
 
     >Use it on form render route . check it out on above Test 
     
-+ `csrfchk () `
++ `await csrfchk () `
 
     >On mobile app you must post __csrf_token__ to the route that use this 
     method 
@@ -166,7 +167,7 @@ __node version  >= 10__
 
     > On mobile app you must send __captcha_name__  input  as a posted data( by default captcha )  to the route that will call captcha_chk
     
-+ `captcha_chk (captcha_name='captcha')`
++ `await captcha_chk (captcha_name='captcha')`
 
   > check input posted captcha_name ( by default is captcha )
   
