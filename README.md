@@ -32,12 +32,15 @@ __node version  >= 10__
     
 ```
 
-### Example
+### Example 
+**prepare Express**
+
 ```javascript
     const express = require('express')
     const app = express()
     port = process.env.port || 3000
     
+    //ejwt instance
     const ejwt  = require('express-jwt-enhanced')({
         use_redis : false,      
         expire: 300,         
@@ -46,6 +49,12 @@ __node version  >= 10__
         redis_port:6379,
         secret :`$eCr3T`,
     }); 
+
+     //authentication middleware
+    async function auth(req,res,next){
+       await ejwt.get() ?next():res.send({err:'auth failed'})
+    }
+
     const bodyparser = require('body-parser');
     const cookieparser= require('cookie-parser')
     
@@ -57,13 +66,10 @@ __node version  >= 10__
     
     app.listen(port, () => console.log(`listening on port ${port}!`))
     
-    
-  //authentication middleware
-    async function auth(req,res,next){
-       await ejwt.get() ?next():res.send({err:'auth failed'})
-    }
-    
-    /****** Routes **********************/
+ ```
+ 
+**Login**
+```javascript
     
     app.get('/login', async(req, res)=> {
         
@@ -73,19 +79,30 @@ __node version  >= 10__
                    csrf_token: ejwt.data.csrf_token
         })
         /* 
-          on mobile you must post token & csrf_token for each requests
+          on mobile you must post token  & csrf_token for each requests
         */
-    })
+```
+
+**logout**        
+```javascript
 
     app.get('/logout', async(req, res)=> {
         await ejwt.unset()
         res.send('logouted.')
-    })
+    });
+    
+```
+
+**with middleware**        
+```javascript
 
     app.get('/with_auth',auth, async (req, res)=> {
         res.send('Authed. ;)')
     });
+```
 
+**csurf generate**        
+```javascript
     app.get('/csrfgen', async (req, res)=> {
          res.json(await ejwt.csrfgen())
          /* in real world:
@@ -93,7 +110,10 @@ __node version  >= 10__
              res.render('your-form.hrml')
          */
     });
+```
 
+**csurf check**        
+```javascript
     app.get('/csrfchk', async (req, res)=> {
          //for test
          res.json(await ejwt.csrfchk())
@@ -106,7 +126,10 @@ __node version  >= 10__
                 do somthing....
         */
     });
+```
 
+**captcha**        
+```javascript
     app.get('/captcha', async function(req, res) {
        res.type('svg').send(await ejwt.captcha_gen())
     });
@@ -124,7 +147,6 @@ __node version  >= 10__
     app.post('/captcha_chk', async function(req, res) {
        res.send(await ejwt.captcha_chk())
     });
-
 
 ```
 
