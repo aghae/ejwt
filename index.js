@@ -2,20 +2,22 @@
 
 const ejwt = {
     conf:{},
+    req:{},
+    res:{},
     token : null,
     data : {},
     reqToken: ()=>{
 
-        var useragent= _req.header('user-agent')
+        var useragent= ejwt.req.header('user-agent')
         var token,csrf_token;
         if(useragent.match(/html/i)){    //request from browser 
-            token=_req.cookies && _req.cookies.token
-            csrf_token=_req.cookies && _req.cookies.csrf_token
+            token=ejwt.req.cookies && ejwt.req.cookies.token
+            csrf_token=ejwt.req.cookies && ejwt.req.cookies.csrf_token
 
         } 
         if(useragent.match(/android|iphone|ipad|ipod|windows phone/i)){  // request from mobile app & not mobile browser
-            token=_req.body && _req.body.token
-            csrf_token=_req.body && _req.body.csrf_token
+            token=ejwt.req.body && ejwt.req.body.token
+            csrf_token=ejwt.req.body && ejwt.req.body.csrf_token
         }
 
         return {
@@ -56,12 +58,12 @@ const ejwt = {
                   token =  jwtsimple.encode(payload, ejwt.conf.secret);
               }
 
-              if(action=='unset' && _req.cookies && _req.cookies.token){
-                  _res.clearCookie('token')
-                  _res.clearCookie('csrf_token')
+              if(action=='unset' && ejwt.req.cookies && ejwt.req.cookies.token){
+                  ejwt.res.clearCookie('token')
+                  ejwt.res.clearCookie('csrf_token')
               }
               else
-                  _res.setHeader('Set-Cookie',[`token=${token};HttpOnly`,`csrf_token=${csrf_token};HttpOnly`])
+                  ejwt.res.setHeader('Set-Cookie',[`token=${token};HttpOnly`,`csrf_token=${csrf_token};HttpOnly`])
                 
               ejwt.token=token
               ejwt.data=payload
@@ -178,7 +180,7 @@ const ejwt = {
     csrfchk: async ()=> {
     try{
         var ejwt_csrf_token = await  ejwt.getkey('csrf_token')
-        // var  cookie_csrf_token = _req.cookies && _req.cookies.csrf_token
+        // var  cookie_csrf_token = ejwt.req.cookies && ejwt.req.cookies.csrf_token
         var reqToken=ejwt.reqToken()
         var reqToken_csrf = reqToken.csrf_token
 
@@ -204,7 +206,7 @@ const ejwt = {
 
    captcha_chk: async (captcha_name='captcha')=> {
       try{
-        input=_req.body[captcha_name]
+        input=ejwt.req.body[captcha_name]
         var ejwt_captcha = await  ejwt.getkey(captcha_name)
         if(ejwt_captcha && input==ejwt_captcha)
             return {succ:'valid captch :)'}
@@ -217,31 +219,34 @@ const ejwt = {
 
 }
 
+function def(variable,defalt){
+  return typeof variable !== 'undefined'?variable:defalt
+}
+
 
 const jwtsimple  = require('jwt-simple');
 const uniqid     = require('uniqid');
 
-
 module.exports = function(options){
-
+ console.log(ejwt.req)
   ejwt.conf={
         use_redis    : def(options.use_redis    , false         ),       //true : use redis , false : use only jwt for store payload
         expire       : def(options.expire         , 3600        ),       // in seconds
-        sec_cookie   : def(options.sec_cookie    , false         ),       // if true only pass on https . on develop set it to false
+        secret       : def(options.secret        , `$eCr3T`     ),
+        sec_cookie   : def(options.sec_cookie    , false        ),       // if true only pass on https . on develop set it to false
         redis_host   : def(options.redis_host   , 'localhost'   ),
         redis_port   : def(options.redis_port   , 6379          ),
-        secret       : def(options.secure        , `$eCr3T`      )
+        redis_pass   : def(options.redis_pass   , ''            )
   }
 
    if(ejwt.conf.use_redis){
         var REDIS   = require("async-redis");
         __redis   = REDIS.createClient(ejwt.conf.redis_port,ejwt.conf.redis_host)
+        if(ejwt.conf.redis_pass)
+          __redis.auth(ejwt.conf.redis_pass)
       
   }
   return ejwt
 }
 
 
-function def(variable,defalt){
-    return typeof variable !== 'undefined'?variable:defalt
-}

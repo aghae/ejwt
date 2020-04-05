@@ -1,30 +1,32 @@
   
 env={
-    use_redis : false,       //use redis or not
-    expire: 60,           //in seconds
-    sec_cookie: false,      //if true only pass on https . on develop set it to false
-    redis_host:'localhost',
-    redis_port:6379,
-    secret :`$eCr3T`,
+  expire: 3600,           // alive for seconds
+  secret :`$eCr3T`,       // importat!!!! : change it
+  sec_cookie: false,      // if true only pass on https. on develop dont set it to true
 
-    port : 3000,
+  use_redis : false,      // use redis or not
+  redis_host:'localhost',
+  redis_port:6379,
+  redis_pass:'',
+
+  port : 3000,
 }
 
 const express = require('express')
 const app = express()
-const bodyparser = require('body-parser');
-const cookieparser= require('cookie-parser')
+
+const bodyparser = require('body-parser');   //necessary for getting posted data from client (posted csrf & captcha text)
+const cookieparser= require('cookie-parser') //necessary for web apps (by default it stored in cookie on client side)  . for mobile apps you can get it via json result
+app.use(cookieparser())
+   .use(bodyparser.json())
+   .use(bodyparser.urlencoded({ extended: false }))
 
 const ejwt  = require('express-jwt-enhanced')(env); 
+app.use(function(req,res,next){ejwt.req=req,ejwt.res=res,next()})
 
-
-app 
-  .use(cookieparser())
-  .use(bodyparser.json())
-  .use(bodyparser.urlencoded({ extended: false }))
-  .use(function(req,res,next){_req=req,_res=res,next()})
 
 app.listen(env.port, () => console.log(`listening on port ${env.port}!`))
+
 
 
 /*******************************************************************
@@ -32,7 +34,8 @@ app.listen(env.port, () => console.log(`listening on port ${env.port}!`))
 *******************************************************************/
 
 async function auth(req,res,next){
-   await ejwt.get() ?next():res.send({err:'auth failed'})
+ 
+   await ejwt.get() ? next() : res.send({err:'auth failed'} )
 }
   
 
@@ -42,7 +45,17 @@ async function auth(req,res,next){
 
 
 app.get('/', (req, res) => {
-  res.end('Helo polka!');
+  res.end(`Hello ejwt(enhanced json web token) \n
+   [get] => /login \n
+   [get] => /logout
+   [get] => /get\n
+   [get] => /csrfgen\n
+   [get] => /csrfchk\n
+   [get] => /captcha\n
+   [get] => /captcha-form\n
+   [post] => /captcha-chk\n
+   [get] => /logout
+  `);
 
 })
 
@@ -66,29 +79,32 @@ app.all('/get',auth, async (req, res)=> {
 });
 
 
+
+
 app.get('/csrfgen', async (req, res)=> {
+
     res.json(await ejwt.csrfgen())
-   /* in real world:
-       await ejwt.csrfgen()
-       res.render('your-form.hrml')
-   */
 
-    // On `mobile app` you must post csrf_token to route that use csrfchk()
+    /* in real world:
 
+      await ejwt.csrfgen()
+      res.render('your-form.hrml')
+
+    */
 });
 
 app.get('/csrfchk', async (req, res)=> {
-    //for test
-    res.json(await ejwt.csrfchk())
 
-    /* in real world
-      var csrf_chk = await ejwt.csrfchk()
-      if(csrf_chk.err) 
-          res.send('csruf token error')
-      else
-          do somthing....
-     */
-
+  res.json(await ejwt.csrfchk())
+  
+  /* in real world
+  
+    var csrf_chk = await ejwt.csrfchk()
+    if(csrf_chk.err) 
+        res.send('csruf token error')
+    else
+        do somthing....
+  */
 });
 
 app.get('/captcha', async function(req, res) {
@@ -97,7 +113,7 @@ app.get('/captcha', async function(req, res) {
 
 app.get('/captcha-form', async function(req, res) {
    res.send(`
-          <form method='POST' action='/captcha_chk' >
+          <form method='POST' action='/captcha-chk' >
             <img src="/captcha" ><br>
             <input name='captcha' placeholder='Enter above text :'>
           </form>
@@ -107,7 +123,7 @@ app.get('/captcha-form', async function(req, res) {
     )
 });
 
-app.post('/captcha_chk', async function(req, res) {
+app.post('/captcha-chk', async function(req, res) {
    res.send(await ejwt.captcha_chk())
     
 });
