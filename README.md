@@ -9,7 +9,7 @@ __node version  >= 10__
 ### Install
 
 ```
-    npm install aghae/express-jwt-enhanced
+    npm install --force express-jwt-enhanced
 ```
 
 ### Usage
