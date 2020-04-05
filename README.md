@@ -4,8 +4,7 @@ __node version  >= 10__
 ### Features
 - It can be used as a authenticator & session data
 - It can be used as stateless or statefull(with redis for horizontal scaling) 
-- Csruf protection
-- Captcha spam protection
+- with csrf & captcha protection ability
 
 ### Install
 
