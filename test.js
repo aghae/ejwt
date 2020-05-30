@@ -17,12 +17,11 @@ const app = express()
 
 const bodyparser = require('body-parser');   //necessary for getting posted data from client (posted csrf & captcha text)
 const cookieparser= require('cookie-parser') //necessary for web apps (by default it stored in cookie on client side)  . for mobile apps you can get it via json result
+const ejwt  = require('express-jwt-enhanced')(env); 
 app.use(cookieparser())
    .use(bodyparser.json())
    .use(bodyparser.urlencoded({ extended: false }))
-
-const ejwt  = require('express-jwt-enhanced')(env); 
-app.use(function(req,res,next){ejwt.req=req,ejwt.res=res,next()})
+   .use(function(req,res,next){ejwt.req=req,ejwt.res=res,next()})
 
 
 app.listen(env.port, () => console.log(`listening on port ${env.port}!`))
@@ -47,7 +46,7 @@ async function auth(req,res,next){
 app.get('/', (req, res) => {
   res.end(`Hello ejwt(enhanced json web token) \n
    [get] => /login \n
-   [get] => /logout
+   [get] => /logout\n
    [get] => /get\n
    [get] => /csrfgen\n
    [get] => /csrfchk\n

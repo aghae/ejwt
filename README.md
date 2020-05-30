@@ -1,5 +1,4 @@
-## __Express Enhanced JWT__ 
-__node version  >= 10__
+## __Express JWT Enhanced__ 
 
 ### Features
 - It can be used as a authenticator & session data
