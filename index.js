@@ -6,6 +6,7 @@ const ejwt = {
   res:{},
   token : null,
   data : {},
+  decoded_token:{},   
   reqToken: ()=>{
 
       var useragent= ejwt.req.header('user-agent')
@@ -77,7 +78,11 @@ const ejwt = {
 },
 
 set: async (payload,expire=ejwt.conf.expire)=>{
-    return ejwt.do('set',payload,expire)
+
+  if(JSON.stringify(ejwt.decoded_token) !== JSON.stringify({}))
+      payload = ejwt.decoded_token
+
+      return ejwt.do('set',payload,expire)
 },
 
 unset: async ()=>{
@@ -87,11 +92,15 @@ unset: async ()=>{
 get:async ()=>{ //get data
   try{
       var reqToken=ejwt.reqToken()
-      var token = reqToken.token
+
+      if(JSON.stringify(ejwt.decoded_token) !== JSON.stringify({}))
+          token =await jwtsimple.encode(ejwt.decoded_token,ejwt.conf.secret)
+      else
+          token=reqToken.token
+      
       if(!token) return null
 
       var decoded = jwtsimple.decode(token, ejwt.conf.secret)
-
       for(var item of Object.keys(decoded)){
         var expire_item=item+'_expire'
         if(expire_item && Date.now()>decoded[expire_item]){
@@ -146,11 +155,11 @@ setkey: async (key,val,expire = null)=> {
       var pl=(!data)?{}:data
        pl[key]=val
        if(expire) pl[key+'_expire']=Date.now()+expire*1000
+       ejwt.decoded_token=pl
        await ejwt.set(pl)
    }catch(err){
      return {err:err.message}
    }
-
 },
 
 unsetkey: async (key)=> {
