@@ -14,10 +14,8 @@
 ### Usage
 ```javascript
     const express = require('express')
+    const cookieparser= require('cookie-parser') //necessary for web apps (by default it stored in cookie on client side)  . for mobile apps you can get token via json result
     const app = express()
-
-    const bodyparser = require('body-parser');   //necessary for getting posted data from client (posted csrf & captcha text)
-    const cookieparser= require('cookie-parser') //necessary for web apps (by default it stored in cookie on client side)  . for mobile apps you can get it via json result
 
     const options={
         expire: 3600,           // alive for seconds
@@ -31,41 +29,44 @@
         
     }
     const ejwt  = require('express-jwt-enhanced')(options); 
-    app.use(cookieparser())
-       .use(bodyparser.json())
-       .use(bodyparser.urlencoded({ extended: false }))
-       .use(function(req,res,next){ejwt.req=req,ejwt.res=res,next()})   
+
+    app.use(cookieparser())          //necessry for parsing token cookie
+       .use(express.json())          //necessary for parsing application/json
+       .use(express.urlencoded({}))  //necessary for parsing application/x-www-form-urlencoded
+       .use(function(req,res,next){ejwt.req=req,ejwt.res=res,next()})    //necessary 
     
 ```
 
-### Example 
-**Auth Middleware**
+### Examples 
 
-```javascript
-async function auth(req,res,next){
-    await ejwt.get() ? next() : res.send({err:'auth failed'})
-}
-```
  
-**Login**
+*Login:*
 ```javascript
 
 app.get('/login', async(req, res)=> {
   
-  await ejwt.set({ user:'aghae',rol:'admin' })
-  res.json({ succ:'logined',
+  await ejwt.set({ 
+      loggined:true,
+      user:{
+         user:'aghae',
+         rol:'admin' 
+      })
+
+  res.json({  succ: 'logined successfully',
+              //bellow `token,csrf_token` required for mobile app clients but it no need in web apps
               token:ejwt.token,
               csrf_token: ejwt.data.csrf_token
   })
 
-  /* for `web app` everything is.
-     for `mobile app` you must post these token  & csrf_token for each requests
+  /* 
+    for `web app` everything is  ok.  
+    But for `mobile app` you must post these token  & csrf_token for each requests
   */
 })
 ```
 
 
-**Logout**        
+*Logout:*        
 ```javascript
 app.get('/logout', async(req, res)=> {
     await ejwt.unset()
@@ -73,14 +74,22 @@ app.get('/logout', async(req, res)=> {
 });
 ```
 
-**Is Authed**        
+
+*Auth Middleware:*
+
 ```javascript
+//auth middleware
+async function auth(req,res,next){
+    await ejwt.get().loggined ? next() : res.send({err:'auth failed'})
+}
+
+//using auth middleware
 app.get('/is_authed',auth, async (req, res)=> {
     res.send('Authed. ;)')
 });
 ```
 
-**CSRF Generate**        
+*CSRF Generate:*        
 ```javascript
 app.get('/csrfgen', async (req, res)=> {
 
@@ -95,24 +104,25 @@ app.get('/csrfgen', async (req, res)=> {
 });
 ```
 
-**CSRF Check**        
+*CSRF Check:*        
 ```javascript
 app.get('/csrfchk', async (req, res)=> {
 
     res.json(await ejwt.csrfchk())
     
     /* in real world
-    
+
       var csrf_chk = await ejwt.csrfchk()
       if(csrf_chk.err) 
           res.send('csruf token error')
       else
           do somthing....
+
     */
 });
 ```
 
-**Captcha**        
+*Captcha:*        
 ```javascript
 app.get('/captcha', async function(req, res) {
     res.type('svg').send(await ejwt.captcha_gen())
@@ -135,56 +145,71 @@ app.post('/captcha_chk', async function(req, res) { //this must be post method
 
 ```
 
-### Api
+### API's
 
-+ `await set (payload,expire=3600)`
++ ` await set (payload,expire=3600) `
+   set payload json data
+   &nbsp;
 
-  > set payload json data & return encoded token
-  
 + `await get ()`  
-
-   >   get payload  json data  
+  get payload  json data  
+   &nbsp;
    
 + `await unset()`  
+  unset payload json data 
+   &nbsp;
 
-  >unset payload json data 
-  
 + `await getkey (key)`
+  get specified payload key
+   &nbsp;
 
-  >get specified payload key
-  
-+ `await setkey (key,val,expire = null) `
++ `await setkey (key,val,expire = null)`
+  set payload key . nested key like user.profile accepted too
+  ```
+    example:
 
-  > set payload key
-  
+      await set({user:{}})
+      await setkey('user.profile',{name:'a.',fam:'aghae',favs:['fav1','fav2']})
+
+    result: 
+      {
+        user:{
+          profile:{
+            name:'a.',
+            fam:'aghae',
+            favs:['fav1','fav2']
+          }
+        }
+      }
+
+   
 + `await unsetkey (key)`
-
-  >unset specified payload key
+  unset specified payload key
+&nbsp;
   
 + `await csrfgen ()`
+   Use it on route that render your form . check it out on above Eample 
+  &nbsp;  
 
-    >Use it on form render route . check it out on above Test 
-    
 + `await csrfchk () `
-
-    >For mobile app you must post __csrf_token__ to the route that use this 
+  For mobile app you must post __csrf_token__ to the route that use this 
     method 
-    
+  &nbsp;
+  
 + `await captcha_gen (expire=0,captcha_name='captcha')`
+   For mobile app you must send __captcha_name__  input  as a posted data( by default captcha )  to the route that will call captcha_chk
+    &nbsp;
 
-    > For mobile app you must send __captcha_name__  input  as a posted data( by default captcha )  to the route that will call captcha_chk
-    
 + `await captcha_chk (captcha_name='captcha')`
+   check input posted captcha_name ( by default is captcha )
+  &nbsp;
 
-  > check input posted captcha_name ( by default is captcha )
-  
 + `data` 
+  decoded full data property
+  &nbsp;
 
-  >  decoded data propery
-  
 + `token`
-
-  > generared token property
+   generared token property
 
 ---
 

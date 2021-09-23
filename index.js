@@ -1,175 +1,196 @@
 // for node >=10
 
-const ejwt = {
+
+const __ejwt = {
   conf:{},
   req:{},
   res:{},
   token : null,
   data : {},
-  decoded_token:{},   
+  // decoded_token:{},  
+
   reqToken: ()=>{
-
-      var useragent= ejwt.req.header('user-agent')
+      var useragent= __ejwt.req.header('user-agent')
       var token,csrf_token;
-      if(useragent.match(/html/i)){    //request from browser 
-          token=ejwt.req.cookies && ejwt.req.cookies.token
-          csrf_token=ejwt.req.cookies && ejwt.req.cookies.csrf_token
-
-      } 
       if(useragent.match(/android|iphone|ipad|ipod|windows phone/i)){  // request from mobile app & not mobile browser
-          token=ejwt.req.body && ejwt.req.body.token
-          csrf_token=ejwt.req.body && ejwt.req.body.csrf_token
+          return {
+              token: __ejwt.req.body.token || null ,
+              csrf_token: __ejwt.req.body.csrf_token || null
+          }
       }
-
-      return {
-              token: token!==undefined?token:null,
-              csrf_token: csrf_token!==undefined?csrf_token:null,
-
-       }
+      else{
+          return{
+            token: __ejwt.req.cookies.token || null ,
+            csrf_token: __ejwt.req.cookies.csrf_token || null
+          }
+      }
   },
-  do : async (action,payload,expire=ejwt.conf.expire)=>{
+  do: async (action,payload,expire=__ejwt.conf.expire)=>{
       try {
             var tid,token;
-
-            token = await ejwt.get()
-            tid=token?token.tokenId:uniqid()
+            payload = payload || {}
+            token = await __ejwt.getFull() || null
+          
+            tid=(token && token.tokenId)?token.tokenId:uniqid()
             if(action=='unset') expire=1
 
             payload.tokenId=tid
             var csrf_token=uniqid()
             payload.csrf_token=csrf_token
 
-            if(!token && expire || (token &&  !payload.tokenExpire)) 
+            
+            if(!token && expire || (token &&  !payload.tokenExpire)) {
               payload.tokenExpire=Date.now()+expire*1000
+            }
 
-            if(ejwt.conf.use_redis){
+            if(__ejwt.conf.use_redis){
                 if(action=='unset')
                     __redis.del(tid)
-
                 else{
-
                   if(expire) 
                       await __redis.set(tid,JSON.stringify(payload),'EX',expire)
                   else
                       await __redis.set(tid,JSON.stringify(payload))
-
-                  token =  jwtsimple.encode({tokenId:tid}, ejwt.conf.secret);
+                  token =  jwtsimple.encode({tokenId:tid}, __ejwt.conf.secret);
                 }
             }
             else{
-                token =  jwtsimple.encode(payload, ejwt.conf.secret);
+                token =  jwtsimple.encode(payload, __ejwt.conf.secret);
             }
-
-            if(action=='unset' && ejwt.req.cookies && ejwt.req.cookies.token){
-                ejwt.res.clearCookie('token')
-                ejwt.res.clearCookie('csrf_token')
+            if(action=='unset'){
+                __ejwt.res.clearCookie('token')
+                __ejwt.res.clearCookie('csrf_token')
+                __ejwt.req.cookies = ''
+                return null
             }
             else{
-                ejwt.res.setHeader('Set-Cookie',[`token=${token};HttpOnly`,`csrf_token=${csrf_token};HttpOnly`])
+                __ejwt.res.setHeader('Set-Cookie',[`token=${token};httpOnly;path=/`,`csrf_token=${csrf_token};httpOnly;path=/`])
             }
-              
-            ejwt.token=token
-            ejwt.data=payload
-            return token
+
+            __ejwt.token=token
+            __ejwt.data=payload
+
+
+            // for(item of Object.keys(payload)){
+            //   if(/_expire$/.test(item)){
+            //     delete payload[item]
+            //   }
+            // }
+
+            delete payload.captcha
+            delete payload.tokenId
+            delete payload.csrf_token
+            delete payload.tokenExpire
+
+            return payload
 
       }catch(err){
+        // return null
         return {err:err.message}
       }
 },
 
-set: async (payload,expire=ejwt.conf.expire)=>{
-
-  if(JSON.stringify(ejwt.decoded_token) !== JSON.stringify({}))
-      payload = ejwt.decoded_token
-
-      return ejwt.do('set',payload,expire)
+set: async (payload,expire=__ejwt.conf.expire)=>{
+    return await __ejwt.do('set',payload,expire)
+    
 },
 
 unset: async ()=>{
-    return ejwt.do('unset',{})
+    await  __ejwt.do('unset',null)
 },
 
-get:async ()=>{ //get data
+getFull:async()=>{ 
   try{
-      var reqToken=ejwt.reqToken()
 
-      if(JSON.stringify(ejwt.decoded_token) !== JSON.stringify({}))
-          token =await jwtsimple.encode(ejwt.decoded_token,ejwt.conf.secret)
-      else
-          token=reqToken.token
-      
+      var reqToken=__ejwt.reqToken()
+      if(!reqToken.token) 
+          return null
+      token=reqToken.token
       if(!token) return null
-
-      var decoded = jwtsimple.decode(token, ejwt.conf.secret)
+      var decoded = jwtsimple.decode(token, __ejwt.conf.secret)
       for(var item of Object.keys(decoded)){
-        var expire_item=item+'_expire'
-        if(expire_item && Date.now()>decoded[expire_item]){
-            delete decoded[item]
-            delete decoded[expire_item]
+        if(/_expire$/.test(item) && Date.now()>decoded[item]){
+           unsetObjectKey(decoded,item.replace("_expire",""))
+           delete decoded[item]
         }
       }
-
       var ret=null
-      if(ejwt.conf.use_redis){
+      if(__ejwt.conf.use_redis){
         if(decoded.tokenId) 
           ret = await __redis.get(decoded.tokenId) 
           ret=JSON.parse(ret)
       }
       else{
-
-          // if (ejwt.conf.expire && Date.now()>decoded.tokenExpire){
           if ( Date.now()>decoded.tokenExpire){
               ret=null
            }
           else{
-              // delete decoded.captcha
-              // delete decoded.tokenId
-              // delete decoded.csrf_token
-              // delete decoded.tokenExpire
+              __ejwt.data = decoded  //data include  tokenId,csrf_token,tokenExpire,captcah
               ret = decoded
           }
       }
-      ejwt.data = decoded
-      return ret
+
+      return ret && JSON.stringify(ret)!='{}' ? ret:null
 
   }catch(err){
-    return {err:err.message}
+    return null
+    // return {err:err.message}
   }
-  
+},
+get:async()=>{
+  var ret = await __ejwt.getFull()
+  return __ejwt.purify(ret)
+},
+
+purify:(obj)=>{
+  if(obj==null || typeof obj!=="object" )
+    return null
+
+  for(item of Object.keys(obj)){
+    if(/_expire$/.test(item)){
+      delete obj[item]
+    }
+  }
+  delete obj.captcha
+  delete obj.tokenId
+  delete obj.csrf_token
+  delete obj.tokenExpire
+
+  return obj
 
 },
 
 getkey: async (key)=> {
-  var data = await ejwt.get()
+  let data = await __ejwt.getFull()   
   if(data && data[key+'_expire'] && Date.now()>data[key+'_expire']){
       delete data[key]
       delete data[key+'_expire']
-      ejwt.set(data)
+      __ejwt.set(data)
   }
   return (data  &&  data[key])?data[key]:null
 },
 
 setkey: async (key,val,expire = null)=> {
   try{
-      var data = await ejwt.get()
+      var data = await __ejwt.getFull()
       var pl=(!data)?{}:data
-       pl[key]=val
-       if(expire) pl[key+'_expire']=Date.now()+expire*1000
-       ejwt.decoded_token=pl
-       await ejwt.set(pl)
+      setObjectKey(pl,key,val)
+      if(expire) pl[key+'_expire']=Date.now()+expire*1000
+      return __ejwt.purify(await  __ejwt.set(pl))
+      // return  await __ejwt.get()
    }catch(err){
      return {err:err.message}
    }
 },
 
 unsetkey: async (key)=> {
-   var data = await ejwt.get()
+   var data = await __ejwt.getFull()
     try{
         if(data){
-            delete data[key]
+            unsetObjectKey(data,key)
             if(data[key+'_expire'])
               delete data[key+'_expire']
-            await ejwt.set(data)
+            return __ejwt.purify(await __ejwt.set(data))
         }
      }catch(err){
        return {err:err.message}
@@ -178,10 +199,12 @@ unsetkey: async (key)=> {
 
  csrfgen: async ()=> {
   try{
-     await ejwt.set(ejwt.data)
+    //  await __ejwt.set(__ejwt.getFull())
+     await __ejwt.setkey('csrf_token',uniqid())
+     
      return {
-        token: ejwt.token,
-        csrf_token: ejwt.data.csrf_token
+        token: __ejwt.token,
+        csrf_token: __ejwt.data.csrf_token
      }
    }catch(err){
      return {err:err.message}
@@ -189,38 +212,41 @@ unsetkey: async (key)=> {
 
 },
 
-  csrfchk: async ()=> {
-  try{
-      var ejwt_csrf_token = await  ejwt.getkey('csrf_token')
-      // var  cookie_csrf_token = ejwt.req.cookies && ejwt.req.cookies.csrf_token
-      var reqToken=ejwt.reqToken()
-      var reqToken_csrf = reqToken.csrf_token
-
-      if(!ejwt_csrf_token || ejwt_csrf_token!=reqToken_csrf)
-          return {err:'invalid csrf token :('}
-      else
-          return {succ:'csurf token is valid :)'}
-  }catch(err){
-      return {err:err.message}
-  } 
+csrfchk: async ()=> {
+    try{
+        var __ejwt_csrf_token = await  __ejwt.getkey('csrf_token'),
+            reqToken=__ejwt.reqToken(),
+            reqToken_csrf = reqToken.csrf_token
+        if(!__ejwt_csrf_token || __ejwt_csrf_token!=reqToken_csrf)
+            return {err:'invalid csrf token :('}
+        else
+            return {succ:'csurf token is valid :)'}
+    }catch(err){
+        return {err:err.message}
+    } 
 },
 
- captcha_gen: async (expire=0,captcha_name='captcha')=> {
-  try{
-     var svgCaptcha = require('svg-captcha');
-     var captcha = svgCaptcha.create();
-     await  ejwt.setkey(captcha_name,captcha.text,expire)
-     return captcha.data
-   }catch(err){
-     return {err:err.message}
-   }
+ captcha_gen: async (type='text',expire=0,captcha_name='captcha')=> {  //type: text or math
+    try{
+        var svgCaptcha = require('svg-captcha'),
+           captcha
+        if(type=='text')
+            captcha = svgCaptcha.create();
+        else if(type='math')
+           captcha = svgCaptcha.createMathExpr({mathMin:1,mathMax:20,mathOperator:'+'});
+      
+        await  __ejwt.setkey(captcha_name,captcha.text,expire)
+        return captcha.data
+    }catch(err){
+        return {err:err.message}
+    }
  },
 
  captcha_chk: async (captcha_name='captcha')=> {
     try{
-      input=ejwt.req.body[captcha_name]
-      var ejwt_captcha = await  ejwt.getkey(captcha_name)
-      if(ejwt_captcha && input==ejwt_captcha)
+      input=__ejwt.req.body[captcha_name]
+      var __ejwt_captcha = await  __ejwt.getkey(captcha_name)
+      if(__ejwt_captcha && input==__ejwt_captcha)
           return {succ:'valid captch :)'}
       else
           return {err:'invalid captcha :('}
@@ -240,10 +266,9 @@ const jwtsimple  = require('jwt-simple');
 const uniqid     = require('uniqid');
 
 module.exports = function(options){
-//  console.log(ejwt.req)
-ejwt.conf={
+__ejwt.conf={
       use_redis    : def(options.use_redis    , false         ),       //true : use redis , false : use only jwt for store payload
-      expire       : def(options.expire         , 3600        ),       // in seconds
+      expire       : def(options.expire         , 3600          ),       // in seconds
       secret       : def(options.secret        , `$eCr3T`     ),
       sec_cookie   : def(options.sec_cookie    , false        ),       // if true only pass on https . on develop set it to false
       redis_host   : def(options.redis_host   , 'localhost'   ),
@@ -251,14 +276,41 @@ ejwt.conf={
       redis_pass   : def(options.redis_pass   , ''            )
 }
 
- if(ejwt.conf.use_redis){
+
+ if(__ejwt.conf.use_redis){
       var REDIS   = require("async-redis");
-      __redis   = REDIS.createClient(ejwt.conf.redis_port,ejwt.conf.redis_host)
-      if(ejwt.conf.redis_pass)
-        __redis.auth(ejwt.conf.redis_pass)
+      __redis   = REDIS.createClient(__ejwt.conf.redis_port,__ejwt.conf.redis_host)
+      if(__ejwt.conf.redis_pass)
+        __redis.auth(__ejwt.conf.redis_pass)
     
 }
-return ejwt
+return __ejwt
 }
 
 
+//helper funcs
+
+function setObjectKey(obj,path, value) {  //path like profile or profile.favs ,...
+  var schema = obj;  // a moving reference to internal objects within obj
+  var pList = path.split('.');
+  var len = pList.length;
+  for(var i = 0; i < len-1; i++) {
+      var elem = pList[i];
+      if( !schema[elem] ) schema[elem] = {}
+      schema = schema[elem];
+  }
+  schema[pList[len-1]] = value;
+  
+}
+
+function unsetObjectKey(obj,path) { //path like profile or profile.favs ,...
+  var schema = obj;  // a moving reference to internal objects within obj
+  var pList = path.split('.');
+  var len = pList.length;
+  for(var i = 0; i < len-1; i++) {
+      var elem = pList[i];
+      if( !schema[elem] ) schema[elem] = {}
+      schema = schema[elem];
+  }
+  delete schema[pList[len-1]]
+}
