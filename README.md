@@ -46,7 +46,7 @@
 app.get('/login', async(req, res)=> {
   
   await ejwt.set({ 
-      loggined:true,
+      loggedin:true,
       user:{
          user:'aghae',
          rol:'admin' 
@@ -80,7 +80,8 @@ app.get('/logout', async(req, res)=> {
 ```javascript
 //auth middleware
 async function auth(req,res,next){
-    await ejwt.get().loggined ? next() : res.send({err:'auth failed'})
+    var ret = await ejwt.get()
+    ret && ret.loggedin ? next() : res.json({err:'auth failed'})
 }
 
 //using auth middleware

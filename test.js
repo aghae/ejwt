@@ -15,12 +15,11 @@ env={
 const express = require('express')
 const app = express()
 
-const bodyparser = require('body-parser');   //necessary for getting posted data from client (posted csrf & captcha text)
 const cookieparser= require('cookie-parser') //necessary for web apps (by default it stored in cookie on client side)  . for mobile apps you can get it via json result
 const ejwt  = require('express-jwt-enhanced')(env); 
 app.use(cookieparser())
-   .use(bodyparser.json())
-   .use(bodyparser.urlencoded({ extended: false }))
+   .use(express.json())
+   .use(express.urlencoded({ extended: false }))
    .use(function(req,res,next){ejwt.req=req,ejwt.res=res,next()})
 
 
@@ -33,8 +32,8 @@ app.listen(env.port, () => console.log(`listening on port ${env.port}!`))
 *******************************************************************/
 
 async function auth(req,res,next){
- 
-   await ejwt.get() ? next() : res.send({err:'auth failed'} )
+   let ret= await ejwt.get()
+   ret && ret.loggedin ? next() : res.send({err:'auth failed, please /login first'} )
 }
   
 
@@ -47,7 +46,7 @@ app.get('/', (req, res) => {
   res.end(`Hello ejwt(enhanced json web token) \n
    [get] => /login \n
    [get] => /logout\n
-   [get] => /get\n
+   [get] => /get\n  
    [get] => /csrfgen\n
    [get] => /csrfchk\n
    [get] => /captcha\n
@@ -60,7 +59,13 @@ app.get('/', (req, res) => {
 
 app.get('/login', async(req, res)=> {
 
-    await ejwt.set({ user:'aghae',rol:'admin' })
+    await ejwt.set({
+      loggedin:true,
+      user:{
+        name:'aghae',
+        rol:'admin' 
+      }
+    })
 
     res.json({ succ:'logined',
                token:ejwt.token,
@@ -70,14 +75,13 @@ app.get('/login', async(req, res)=> {
 
 app.get('/logout', async(req, res)=> {
     await ejwt.unset()
-    res.send('logouted.')
+    res.json({succ:'logouted'})
 })
 
 app.all('/get',auth, async (req, res)=> {
-    res.send(await ejwt.get())
+   let ret= await ejwt.get() 
+    res.send(ret)
 });
-
-
 
 
 app.get('/csrfgen', async (req, res)=> {
