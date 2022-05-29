@@ -10,7 +10,13 @@ const __ejwt = {
   // decoded_token:{},  
 
   reqToken: ()=>{
-      var useragent= __ejwt.req.header('user-agent')
+    // console.log( __ejwt.req)
+      var useragent
+      if(typeof __ejwt.req.headers =='object')
+         useragent= __ejwt.req.headers['user-agent']
+      else if(typeof __ejwt.req.headers =='function')
+         useragent= __ejwt.req.headers('user-agent')
+
       var token,csrf_token;
       if(useragent.match(/android|iphone|ipad|ipod|windows phone/i)){  // request from mobile app & not mobile browser
           return {
@@ -29,8 +35,9 @@ const __ejwt = {
       try {
             var tid,token;
             payload = payload || {}
+            
             token = await __ejwt.getFull() || null
-          
+      
             tid=(token && token.tokenId)?token.tokenId:uniqid()
             if(action=='unset') expire=1
 
@@ -38,7 +45,7 @@ const __ejwt = {
             var csrf_token=uniqid()
             payload.csrf_token=csrf_token
 
-            
+      
             if(!token && expire || (token &&  !payload.tokenExpire)) {
               payload.tokenExpire=Date.now()+expire*1000
             }
@@ -58,8 +65,10 @@ const __ejwt = {
                 token =  jwtsimple.encode(payload, __ejwt.conf.secret);
             }
             if(action=='unset'){
-                __ejwt.res.clearCookie('token')
-                __ejwt.res.clearCookie('csrf_token')
+              
+                // __ejwt.res.clearCookie('token')
+                // __ejwt.res.clearCookie('csrf_token')
+                 __ejwt.res.setHeader('Set-Cookie',[`token=;httpOnly;path=/`,`csrf_token=;httpOnly;path=/`])
                 __ejwt.req.cookies = ''
                 return null
             }
@@ -103,6 +112,7 @@ getFull:async()=>{
   try{
 
       var reqToken=__ejwt.reqToken()
+    
       if(!reqToken.token) 
           return null
       token=reqToken.token
@@ -129,7 +139,6 @@ getFull:async()=>{
               ret = decoded
           }
       }
-
       return ret && JSON.stringify(ret)!='{}' ? ret:null
 
   }catch(err){
@@ -245,6 +254,7 @@ csrfchk: async ()=> {
  captcha_chk: async (captcha_name='captcha')=> {
     try{
       input=__ejwt.req.body[captcha_name]
+   
       var __ejwt_captcha = await  __ejwt.getkey(captcha_name)
       if(__ejwt_captcha && input==__ejwt_captcha)
           return {succ:'valid captch :)'}

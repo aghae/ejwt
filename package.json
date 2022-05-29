@@ -1,6 +1,6 @@
 {
   "name": "express-jwt-enhanced",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description": "Express Enhanced JSON Web Tocken",
   "main": "index.js",
   "scripts": {
